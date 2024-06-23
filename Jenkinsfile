@@ -24,7 +24,7 @@ pipeline {
                     // AWS Credentials로 Docker에 로그인
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: '4bdcbad7-61ab-479b-ba29-3b8d6ccfbb89', // AWS Credentials Plugin에서 설정한 credentialsId 입력
+                        credentialsId: 'aws-credentials-id', // AWS Credentials Plugin에서 설정한 credentialsId 입력
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
@@ -55,6 +55,7 @@ pipeline {
                             git config user.name "Jenkins"
                             git add ${helmValuesPath}
                             git commit -m "Update image tag to ${IMAGE_TAG}"
+                            git checkout ${GIT_BRANCH}  // 명시적으로 브랜치 체크아웃
                             git push origin ${GIT_BRANCH}
                             """
                         } else {
