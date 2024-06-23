@@ -8,10 +8,14 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'web-intro'
+        GITHUB_CREDENTIALS_ID = 'github-token' // Jenkins에 설정한 GitHub credentials ID
+        GIT_REPO_URL = 'https://github.com/khj811/test-jenkins.git'
+        GIT_BRANCH = 'main'
+        HELM_VALUES_PATH = 'values.yaml' // 루트 디렉토리에 있는 Helm 차트의 values.yaml 파일 경로
     }
 
     stages {
-        stage('Build and Push Images') {
+        stage('Build') {
             steps {
                 script {
                     // Docker 이미지 빌드 with --no-cache=true
@@ -28,9 +32,27 @@ pipeline {
                         sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
                         sh "docker tag ${DOCKER_IMAGE_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
                         sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
+                    }
+                }
+            }
+        }
 
-                        // values.yaml 파일 업데이트
-                        sh "sed -i 's/^\\s*imageTag: .*/    imageTag: v${BUILD_NUMBER}/' web-helm/values.yaml"
+        stage('Update Helm Values') {
+            steps {
+                script {
+                    // GitHub 리포지토리 클론 및 Helm values.yaml 파일 업데이트
+                    withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS_ID}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                        sh """
+                        git clone ${GIT_REPO_URL}
+                        cd test-jenkins
+                        git checkout ${GIT_BRANCH}
+                        sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${HELM_VALUES_PATH}
+                        git config user.email "hajinkim811@gmail.com"
+                        git config user.name "khj811"
+                        git add ${HELM_VALUES_PATH}
+                        git commit -m "Update image tag to ${IMAGE_TAG}"
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@${GIT_REPO_URL.replace('https://', '')} ${GIT_BRANCH}
+                        """
                     }
                 }
             }
