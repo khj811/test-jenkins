@@ -42,7 +42,7 @@ pipeline {
                 script {
                     // GitHub 리포지토리 클론 및 Helm values.yaml 파일 업데이트
                     withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS_ID}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                        dir('test-jenkins') {
+                        dir('test-jenkins/web-helm') {
                             sh """
                             git checkout ${GIT_BRANCH}
                             sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${HELM_VALUES_PATH}
@@ -51,7 +51,7 @@ pipeline {
                             git add ${HELM_VALUES_PATH}
                             git commit -m "Update image tag to ${IMAGE_TAG}"
                             git pull origin ${GIT_BRANCH} --rebase
-                            git push origin ${GIT_BRANCH} --force
+                            git push origin ${GIT_BRANCH}
                             """
                         }
                     }
