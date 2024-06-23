@@ -1,4 +1,4 @@
-replicaCount: 6
+replicaCount: 1
 
 image:
   repository: 471112853004.dkr.ecr.ap-northeast-2.amazonaws.com 
