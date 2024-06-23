@@ -15,7 +15,7 @@ pipeline {
     }
 
     stages {
-        stage('Build') {
+        stage('Build and Push Docker Image') {
             steps {
                 script {
                     // Docker 이미지 빌드 with --no-cache=true
@@ -42,17 +42,23 @@ pipeline {
                 script {
                     // GitHub 리포지토리 클론 및 Helm values.yaml 파일 업데이트
                     withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS_ID}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                        dir('test-jenkins/web-helm') {
+                        // test-jenkins 레포지토리에서 코드를 가져옴
+                        checkout([$class: 'GitSCM', branches: [[name: "${GIT_BRANCH}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: "${GITHUB_CREDENTIALS_ID}", url: "${GIT_REPO_URL}"]]])
+
+                        // Helm values.yaml 파일 경로 확인 및 수정
+                        def helmValuesPath = "${WORKSPACE}/${HELM_VALUES_PATH}"
+                        if (fileExists("${helmValuesPath}")) {
+                            // 파일이 존재하면 이미지 태그를 업데이트하고 커밋
                             sh """
-                            git checkout ${GIT_BRANCH}
-                            sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${HELM_VALUES_PATH}
+                            sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${helmValuesPath}
                             git config user.email "jenkins@example.com"
                             git config user.name "Jenkins"
-                            git add ${HELM_VALUES_PATH}
+                            git add ${helmValuesPath}
                             git commit -m "Update image tag to ${IMAGE_TAG}"
-                            git pull origin ${GIT_BRANCH} --rebase
                             git push origin ${GIT_BRANCH}
                             """
+                        } else {
+                            error "Helm values.yaml 파일이 ${HELM_VALUES_PATH} 경로에 존재하지 않습니다."
                         }
                     }
                 }
