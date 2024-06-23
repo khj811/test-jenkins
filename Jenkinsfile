@@ -5,7 +5,7 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-northeast-2'
         AWS_ACCOUNT_ID = '471112853004'
         ECR_REPOSITORY = 'web-intro'
-        IMAGE_TAG = "${BUILD_NUMBER}"
+        IMAGE_TAG = '27'
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'web-intro'
         GITHUB_CREDENTIALS_ID = 'github-token' // Jenkins에 설정한 GitHub credentials ID
@@ -50,7 +50,8 @@ pipeline {
                             git config user.name "Jenkins"
                             git add ${HELM_VALUES_PATH}
                             git commit -m "Update image tag to ${IMAGE_TAG}"
-                            git push https://${GIT_USERNAME}:${GIT_PASSWORD}@${GIT_REPO_URL.replace('https://', '')} ${GIT_BRANCH}
+                            git pull origin ${GIT_BRANCH} --rebase
+                            git push origin ${GIT_BRANCH} --force
                             """
                         }
                     }
