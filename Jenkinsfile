@@ -5,8 +5,7 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-northeast-2'
         AWS_ACCOUNT_ID = '471112853004'
         ECR_REPOSITORY = 'test'
-        // 이미지 태그를 타임스탬프로 설정
-        IMAGE_TAG = "${BUILD_ID}"
+        IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'test'
     }
@@ -15,8 +14,8 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Docker 이미지 빌드
-                    def customImage = docker.build("${DOCKER_IMAGE_NAME}:${IMAGE_TAG}", "-f ${DOCKERFILE_PATH} .")
+                    // Docker 이미지 빌드 with --no-cache=true
+                    def customImage = docker.build("${DOCKER_IMAGE_NAME}:${IMAGE_TAG}", "--no-cache=true -f ${DOCKERFILE_PATH} .")
 
                     // AWS Credentials로 Docker에 로그인
                     withCredentials([[
