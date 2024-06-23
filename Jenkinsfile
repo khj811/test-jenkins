@@ -49,7 +49,7 @@ pipeline {
                 sh "git config --global user.name 'khj811'"
                 sh "git add ${HELM_CHART_PATH}/values.yaml"
                 sh "git commit -m 'Update imageTag in Helm Chart to ${IMAGE_TAG}'"
-                sh "git push origin main"
+                sh "git push -u origin main"
             }
         }
         failure {
