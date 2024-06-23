@@ -46,6 +46,10 @@ pipeline {
                     sh "git config --global user.email 'hajinkim811@gmail.com'"
                     sh "git config --global user.name 'khj811'"
                     sh "git remote set-url origin ${GITHUB_REPO_URL}" // set remote URL with token
+
+                    // 원격 브랜치의 변경 사항을 병합
+                    sh "git pull origin main"
+
                     sh "git add ${HELM_CHART_PATH}/values.yaml"
                     sh "git commit -m 'Update imageTag in Helm Chart to ${IMAGE_TAG}'"
                     sh "git push origin main"
