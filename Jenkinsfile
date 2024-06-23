@@ -46,7 +46,7 @@ pipeline {
                     sh "git config --global user.name 'khj811'"
                     sh "git add ${HELM_CHART_PATH}/values.yaml"
                     sh "git commit -m 'Update imageTag in Helm Chart to ${IMAGE_TAG}'"
-                    sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git push origin main"
+                    sh "git push origin main"
                 }
             }
         }
