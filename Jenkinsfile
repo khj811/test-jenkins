@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'ap-northeast-2'
         AWS_ACCOUNT_ID = '471112853004'
-        ECR_REPOSITORY = 'test'
+        ECR_REPOSITORY = 'web-intro'
         IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'web-intro'
