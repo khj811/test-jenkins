@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         AWS_DEFAULT_REGION = 'ap-northeast-2'
-        AWS_ACCOUNT_ID = 'hajinkim811@gmail.com'
+        AWS_ACCOUNT_ID = '471112853004'
         ECR_REPOSITORY = 'test'
         IMAGE_TAG = 'latest' 
     }
