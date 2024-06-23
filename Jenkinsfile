@@ -8,11 +8,10 @@ pipeline {
         IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'web-intro'
-        GITHUB_REPO_DIR = 'web-helm'
     }
 
     stages {
-        stage('Build') {
+        stage('Build and Push Images') {
             steps {
                 script {
                     // Docker 이미지 빌드 with --no-cache=true
@@ -31,8 +30,7 @@ pipeline {
                         sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
 
                         // values.yaml 파일 업데이트
-                        def newValue = "v${BUILD_NUMBER}"  // 또는 필요에 따라 다른 이미지 태그 생성 방식 사용
-                        sh "sed -i 's|imageTag: .*|imageTag: ${newValue}|g' ${GITHUB_REPO_DIR}/values.yaml"
+                        sh "sed -i 's/^\\s*imageTag: .*/    imageTag: v${BUILD_NUMBER}/' web-helm/values.yaml"
                     }
                 }
             }
