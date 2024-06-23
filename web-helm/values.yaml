@@ -1,7 +1,7 @@
 replicaCount: 6
 
 image:
-  repository: 891377152236.dkr.ecr.ap-northeast-2.amazonaws.com 
+  repository: 471112853004.dkr.ecr.ap-northeast-2.amazonaws.com 
   pullPolicy: IfNotPresent
 
 resources:
