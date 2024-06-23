@@ -11,7 +11,7 @@ pipeline {
         GITHUB_CREDENTIALS_ID = 'github-token' // Jenkins에 설정한 GitHub credentials ID
         GIT_REPO_URL = 'https://github.com/khj811/test-jenkins.git'
         GIT_BRANCH = 'main'
-        HELM_VALUES_PATH = 'values.yaml' // 루트 디렉토리에 있는 Helm 차트의 values.yaml 파일 경로
+        HELM_VALUES_PATH = 'web-helm/values.yaml' // Helm values.yaml 파일의 경로 수정
     }
 
     stages {
@@ -44,11 +44,11 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS_ID}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh """
                         git clone ${GIT_REPO_URL}
-                        cd web-helm
+                        cd web-helm // web-helm 디렉토리로 이동
                         git checkout ${GIT_BRANCH}
                         sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${HELM_VALUES_PATH}
-                        git config user.email "hajinkim811@gmail.com"
-                        git config user.name "khj811"
+                        git config user.email "jenkins@example.com"
+                        git config user.name "Jenkins"
                         git add ${HELM_VALUES_PATH}
                         git commit -m "Update image tag to ${IMAGE_TAG}"
                         git push https://${GIT_USERNAME}:${GIT_PASSWORD}@${GIT_REPO_URL.replace('https://', '')} ${GIT_BRANCH}
