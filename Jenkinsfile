@@ -49,7 +49,9 @@ pipeline {
                 // Git에 변경 사항을 커밋하고 푸시
                 sh "git config --global user.email 'hajinkim811@gmail.com'"
                 sh "git config --global user.name 'khj811'"
+                sh "git stash"
                 sh "git checkout ${GIT_BRANCH}" // main 브랜치로 체크아웃
+                sh "git stash pop"
                 sh "git add ${HELM_CHART_PATH}/values.yaml"
                 sh "git commit -m 'Update imageTag in Helm Chart to ${IMAGE_TAG}'"
                 sh "git push origin ${GIT_BRANCH}" // ${GIT_BRANCH}에 정의된 브랜치로 푸시
