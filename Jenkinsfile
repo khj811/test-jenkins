@@ -9,6 +9,7 @@ pipeline {
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'web-intro'
         HELM_CHART_PATH = 'web-helm' // 헬름 차트가 있는 디렉토리 경로
+        GIT_BRANCH = 'main' // GitHub의 기본 브랜치 이름을 명시적으로 설정
     }
 
     stages {
@@ -47,9 +48,10 @@ pipeline {
                 // Git에 변경 사항을 커밋하고 푸시
                 sh "git config --global user.email 'hajinkim811@gmail.com'"
                 sh "git config --global user.name 'khj811'"
+                sh "git checkout ${GIT_BRANCH}" // main 브랜치로 체크아웃
                 sh "git add ${HELM_CHART_PATH}/values.yaml"
                 sh "git commit -m 'Update imageTag in Helm Chart to ${IMAGE_TAG}'"
-                sh "git push -u origin main"
+                sh "git push origin ${GIT_BRANCH}" // ${GIT_BRANCH}에 정의된 브랜치로 푸시
             }
         }
         failure {
