@@ -5,8 +5,8 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-northeast-2'
         AWS_ACCOUNT_ID = '471112853004'
         ECR_REPOSITORY = 'test'
-        // 이미지 태그를 Jenkins 빌드 번호로 설정
-        IMAGE_TAG = "jenkins-${BUILD_NUMBER}"
+        // 이미지 태그를 빌드 번호로 설정
+        IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'test'
     }
