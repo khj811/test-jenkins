@@ -10,6 +10,7 @@ pipeline {
         DOCKER_IMAGE_NAME = 'web-intro'
         HELM_CHART_PATH = 'web-helm' // 헬름 차트가 있는 디렉토리 경로
         GIT_BRANCH = 'main' // GitHub의 기본 브랜치 이름을 명시적으로 설정
+        GITHUB_TOKEN = credentials('github-token') // GitHub 개인 액세스 토큰 ID
     }
 
     stages {
