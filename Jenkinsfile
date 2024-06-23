@@ -9,8 +9,7 @@ pipeline {
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'web-intro'
         HELM_CHART_PATH = 'web-helm' // 헬름 차트가 있는 디렉토리 경로
-        GIT_BRANCH = 'main' // GitHub의 기본 브랜치 이름을 명시적으로 설정
-        GITHUB_TOKEN = credentials('github-token') // GitHub 개인 액세스 토큰 ID
+        GITHUB_TOKEN = credentials('github-token') // GitHub 토큰 Credentials ID
     }
 
     stages {
@@ -35,25 +34,27 @@ pipeline {
                 }
             }
         }
+
+        stage('Update Helm Chart') {
+            steps {
+                script {
+                    // 헬름 차트 값 업데이트
+                    sh "sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${HELM_CHART_PATH}/values.yaml"
+
+                    // Git에 변경 사항을 커밋하고 푸시
+                    sh "git config --global user.email 'hajinkim811@gmail.com'"
+                    sh "git config --global user.name 'khj811'"
+                    sh "git add ${HELM_CHART_PATH}/values.yaml"
+                    sh "git commit -m 'Update imageTag in Helm Chart to ${IMAGE_TAG}'"
+                    sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' git push origin main"
+                }
+            }
+        }
     }
 
     post {
         success {
             echo "빌드 및 ECR 푸시 성공, 이미지 버전: ${IMAGE_TAG}"
-
-            // 이미지 빌드 및 푸시가 성공했을 때, Helm Chart의 값을 업데이트하고 Git 저장소에 푸시
-            script {
-                // 헬름 차트 값 업데이트
-                sh "sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${HELM_CHART_PATH}/values.yaml"
-                
-                // Git에 변경 사항을 커밋하고 푸시
-                sh "git config --global user.email 'hajinkim811@gmail.com'"
-                sh "git config --global user.name 'khj811'"
-                sh "git checkout -f ${GIT_BRANCH}" // main 브랜치로 강제로 체크아웃
-                sh "git add ${HELM_CHART_PATH}/values.yaml"
-                sh "git commit -m 'Update imageTag in Helm Chart to ${IMAGE_TAG}'"
-                sh "git push origin ${GIT_BRANCH}" // ${GIT_BRANCH}에 정의된 브랜치로 푸시
-            }
         }
         failure {
             echo '빌드 또는 ECR 푸시 실패'
