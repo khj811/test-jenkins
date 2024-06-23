@@ -5,17 +5,20 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-northeast-2'
         AWS_ACCOUNT_ID = '471112853004'
         ECR_REPOSITORY = 'test'
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        DOCKERFILE_PATH = 'Dockerfile'
-        DOCKER_IMAGE_NAME = 'test'
     }
 
     stages {
-        stage('Build') {
+        stage('Build and Push Images') {
             steps {
                 script {
-                    // Docker 이미지 빌드 with --no-cache=true
-                    def customImage = docker.build("${DOCKER_IMAGE_NAME}:${IMAGE_TAG}", "--no-cache=true -f ${DOCKERFILE_PATH} .")
+                    // Docker 이미지 빌드 및 푸시를 위한 함수 정의
+                    def buildAndPushImage = { imageName ->
+                        def version = readFile(file: "Dockerfile/${imageName}/VERSION").trim()
+                        def dockerImageTag = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${imageName}-${version}"
+                        def customImage = docker.build("${imageName}:${version}", "-f Dockerfile/${imageName}/Dockerfile .")
+                        sh "docker tag ${imageName}:${version} ${dockerImageTag}"
+                        sh "docker push ${dockerImageTag}"
+                    }
 
                     // AWS Credentials로 Docker에 로그인
                     withCredentials([[
@@ -24,10 +27,20 @@ pipeline {
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
-                        // AWS ECR에 로그인 및 이미지 푸시
+                        // AWS ECR에 로그인
                         sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
-                        sh "docker tag ${DOCKER_IMAGE_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
-                        sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
+
+                        // 각 이미지를 빌드하고 푸시
+                        ['web-intro', 'web-home'].each { imageName ->
+                            def currentVersion = readFile(file: "Dockerfile/${imageName}/VERSION").trim()
+                            def latestVersion = sh(script: "aws ecr describe-images --repository-name ${ECR_REPOSITORY} --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text || echo ''", returnStdout: true).trim()
+                            
+                            if (currentVersion != latestVersion) {
+                                buildAndPushImage(imageName)
+                            } else {
+                                echo "Version ${currentVersion} of image ${imageName} is already up to date. Skipping build and push."
+                            }
+                        }
                     }
                 }
             }
@@ -36,7 +49,7 @@ pipeline {
 
     post {
         success {
-            echo "빌드 및 ECR 푸시 성공, 이미지 버전: ${IMAGE_TAG}"
+            echo "빌드 및 ECR 푸시 성공"
         }
         failure {
             echo '빌드 또는 ECR 푸시 실패'
