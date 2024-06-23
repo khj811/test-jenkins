@@ -10,6 +10,7 @@ pipeline {
         DOCKER_IMAGE_NAME = 'web-intro'
         HELM_CHART_PATH = 'web-helm' // 헬름 차트가 있는 디렉토리 경로
         GITHUB_TOKEN = credentials('github-token') // GitHub 토큰 Credentials ID
+        GITHUB_REPO_URL = "https://${GITHUB_TOKEN}@github.com/khj811/test-jenkins.git" // HTTPS URL with token
     }
 
     stages {
@@ -44,6 +45,7 @@ pipeline {
                     // Git에 변경 사항을 커밋하고 푸시
                     sh "git config --global user.email 'hajinkim811@gmail.com'"
                     sh "git config --global user.name 'khj811'"
+                    sh "git remote set-url origin ${GITHUB_REPO_URL}" // set remote URL with token
                     sh "git add ${HELM_CHART_PATH}/values.yaml"
                     sh "git commit -m 'Update imageTag in Helm Chart to ${IMAGE_TAG}'"
                     sh "git push origin main"
