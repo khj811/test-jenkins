@@ -44,7 +44,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS_ID}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh """
                         git clone ${GIT_REPO_URL}
-                        cd test-jenkins
+                        cd web-helm
                         git checkout ${GIT_BRANCH}
                         sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${HELM_VALUES_PATH}
                         git config user.email "hajinkim811@gmail.com"
