@@ -5,15 +5,16 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-northeast-2'
         AWS_ACCOUNT_ID = '471112853004'
         ECR_REPOSITORY = 'test'
-        IMAGE_TAG = 'latest' 
+        IMAGE_TAG = 'latest'
+        DOCKER_IMAGE = 'docker:19.03.12'
     }
 
     stages {
         stage('Build') {
             agent {
                 docker {
-                    image 'docker:19.03.12' // Docker 버전을 지정하여 사용
-                    args '-v /var/run/docker.sock:/var/run/docker.sock' // Docker 소켓을 마운트
+                    image DOCKER_IMAGE
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
             steps {
@@ -29,7 +30,6 @@ pipeline {
                 }
             }
         }
-
     }
 
     post {
