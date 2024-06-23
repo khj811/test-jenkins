@@ -12,6 +12,7 @@ pipeline {
         GIT_REPO_URL = 'https://github.com/khj811/test-jenkins.git'
         GIT_BRANCH = 'main'
         HELM_VALUES_PATH = 'web-helm/values.yaml' // Helm 차트의 values.yaml 파일 경로 (루트 디렉토리 기준)
+        AWS_CREDENTIALS_ID = '4bdcbad7-61ab-479b-ba29-3b8d6ccfbb89' // Jenkins에 설정한 AWS credentials ID
     }
 
     stages {
@@ -24,7 +25,7 @@ pipeline {
                     // AWS Credentials로 Docker에 로그인
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: '4bdcbad7-61ab-479b-ba29-3b8d6ccfbb89', // AWS Credentials Plugin에서 설정한 credentialsId 입력
+                        credentialsId: "${AWS_CREDENTIALS_ID}", // AWS Credentials Plugin에서 설정한 credentialsId 입력
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
@@ -55,7 +56,6 @@ pipeline {
                             git config user.name "Jenkins"
                             git add ${helmValuesPath}
                             git commit -m "Update image tag to ${IMAGE_TAG}"
-                            git checkout ${GIT_BRANCH}  // 명시적으로 브랜치 체크아웃
                             git push origin ${GIT_BRANCH}
                             """
                         } else {
