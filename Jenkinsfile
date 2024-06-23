@@ -5,31 +5,27 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-northeast-2'
         AWS_ACCOUNT_ID = '471112853004'
         ECR_REPOSITORY = 'web-intro'
-        IMAGE_TAG = '27'
+        IMAGE_TAG = "${BUILD_NUMBER}" // 이미지 태그를 젠킨스 빌드 번호로 설정
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'web-intro'
-        GITHUB_CREDENTIALS_ID = 'github-token' // Jenkins에 설정한 GitHub credentials ID
-        GIT_REPO_URL = 'https://github.com/khj811/test-jenkins.git'
-        GIT_BRANCH = 'main'
-        HELM_VALUES_PATH = 'web-helm/values.yaml' // Helm 차트의 values.yaml 파일 경로 (루트 디렉토리 기준)
-        AWS_CREDENTIALS_ID = '4bdcbad7-61ab-479b-ba29-3b8d6ccfbb89' // Jenkins에 설정한 AWS credentials ID
+        HELM_CHART_PATH = 'web-helm' // 헬름 차트가 있는 디렉토리 경로
+        HELM_RELEASE_NAME = 'web-app' // 배포할 헬름 릴리스 이름
     }
 
     stages {
-        stage('Build and Push Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 script {
                     // Docker 이미지 빌드 with --no-cache=true
                     def customImage = docker.build("${DOCKER_IMAGE_NAME}:${IMAGE_TAG}", "--no-cache=true -f ${DOCKERFILE_PATH} .")
 
-                    // AWS Credentials로 Docker에 로그인
+                    // AWS ECR에 로그인 및 이미지 푸시
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: "${AWS_CREDENTIALS_ID}", // AWS Credentials Plugin에서 설정한 credentialsId 입력
+                        credentialsId: '4bdcbad7-61ab-479b-ba29-3b8d6ccfbb89', // AWS Credentials Plugin에서 설정한 credentialsId 입력
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
-                        // AWS ECR에 로그인 및 이미지 푸시
                         sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
                         sh "docker tag ${DOCKER_IMAGE_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
                         sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
@@ -38,30 +34,21 @@ pipeline {
             }
         }
 
-        stage('Update Helm Values') {
+        stage('Update Helm Chart Values') {
             steps {
                 script {
-                    // GitHub 리포지토리 클론 및 Helm values.yaml 파일 업데이트
-                    withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS_ID}", passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                        // test-jenkins 레포지토리에서 코드를 가져옴
-                        checkout([$class: 'GitSCM', branches: [[name: "${GIT_BRANCH}"]], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: "${GITHUB_CREDENTIALS_ID}", url: "${GIT_REPO_URL}"]]])
+                    // 헬름 차트 값 업데이트
+                    sh "sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${HELM_CHART_PATH}/values.yaml"
+                }
+            }
+        }
 
-                        // Helm values.yaml 파일 경로 확인 및 수정
-                        def helmValuesPath = "${WORKSPACE}/${HELM_VALUES_PATH}"
-                        if (fileExists("${helmValuesPath}")) {
-                            // 파일이 존재하면 이미지 태그를 업데이트하고 커밋
-                            sh """
-                            sed -i 's|imageTag:.*|imageTag: ${IMAGE_TAG}|' ${helmValuesPath}
-                            git config user.email "jenkins@example.com"
-                            git config user.name "Jenkins"
-                            git add ${helmValuesPath}
-                            git commit -m "Update image tag to ${IMAGE_TAG}"
-                            git push origin ${GIT_BRANCH}
-                            """
-                        } else {
-                            error "Helm values.yaml 파일이 ${HELM_VALUES_PATH} 경로에 존재하지 않습니다."
-                        }
-                    }
+        stage('Deploy Helm Chart with Argo CD') {
+            steps {
+                script {
+                    // 헬름 차트 배포
+                    sh "helm upgrade --install ${HELM_RELEASE_NAME} ${HELM_CHART_PATH}"
+                    sh "argocd app sync ${HELM_RELEASE_NAME} --self-heal"
                 }
             }
         }
@@ -72,7 +59,7 @@ pipeline {
             echo "빌드 및 ECR 푸시 성공, 이미지 버전: ${IMAGE_TAG}"
         }
         failure {
-            echo '빌드 또는 ECR 푸시 실패'
+            echo '빌드, ECR 푸시, 또는 Helm 배포 실패'
         }
     }
 }
