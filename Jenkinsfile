@@ -5,7 +5,8 @@ pipeline {
         AWS_DEFAULT_REGION = 'ap-northeast-2'
         AWS_ACCOUNT_ID = '471112853004'
         ECR_REPOSITORY = 'test'
-        IMAGE_TAG = 'latest'
+        // 이미지 태그를 Jenkins 빌드 번호로 설정
+        IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKERFILE_PATH = 'Dockerfile'
         DOCKER_IMAGE_NAME = 'test'
     }
@@ -24,12 +25,11 @@ pipeline {
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
+                        // AWS ECR에 로그인 및 이미지 푸시
                         sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+                        sh "docker tag ${DOCKER_IMAGE_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
+                        sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
                     }
-
-                    // Docker 이미지를 AWS ECR에 푸시
-                    sh "docker tag ${DOCKER_IMAGE_NAME}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
-                    sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}"
                 }
             }
         }
@@ -37,7 +37,7 @@ pipeline {
 
     post {
         success {
-            echo '빌드 및 ECR 푸시 성공'
+            echo "빌드 및 ECR 푸시 성공, 이미지 버전: ${IMAGE_TAG}"
         }
         failure {
             echo '빌드 또는 ECR 푸시 실패'
